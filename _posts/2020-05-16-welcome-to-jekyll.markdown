@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Welcome to LocLog!"
+title: "github pages + jekyll搭建个人blog"
 date: 2020-05-16 14:40:20 +0800
 categories: Website
 ---
@@ -36,3 +36,5 @@ github pages 默认支持的版本比较低，目前是 3.8.5，最新的 jekyll
 删除默认的 index.html 文件，website 就跑起来了，自动渲染目录下的 index.md。这时遇到的第一个问题就出现了，没有 favcion，没有图标，光秃秃的总不太好看，如何加呢，md 文件里貌似没有添加的入口。参考[这篇文章](https://medium.com/@xiang_zhou/how-to-add-a-favicon-to-your-jekyll-site-2ac2179cc2ed)，我们可以增加一个 header 文件，来处理 html 头的问题。
 
 下面的问题就是生成图标了，mac 触摸板的出现，对网站的图标提出了新的要求，[这个网站](https://realfavicongenerator.net/)提供了全套的图标处理方案。
+
+目前就这些注意事项吧，这个 blog 的源码在[这里](https://github.com/loclog/loclog.github.io)，有不清楚的问题可以参考一下。
