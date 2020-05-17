@@ -10,8 +10,9 @@
     repo: 'loclog.github.io', //customize
     owner: 'loclog', //customize
     admin: ['loclog'], //customize
-    id: window.location.pathname, // leave this line as it is
-
+    id: md5(window.location.pathname), // leave this line as it is
+    title: document.title,
+    body: '文章链接：' + decodeURIComponent(location.origin + location.pathname)
   });
   gitalk.render('gitalk-container');
 </script>
