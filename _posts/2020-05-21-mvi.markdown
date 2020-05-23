@@ -1,0 +1,69 @@
+---
+layout: post
+title: "Android mvi架构"
+date: 2020-05-21 23:04:58 +0800
+categories: Android
+---
+
+Android 的系统架构从 MVC 开始，演化了很多的版本，有 MPV，MVVM，最新的架构是这篇要讲的 MVI。
+
+开始讲 MVI 之前，我们先探讨一下之前的各个版本的差异，这里要引用[stack overflow](https://stackoverflow.com/questions/59205614/what-is-the-difference-between-mvi-compared-to-mvc-and-mvvm)上的一篇文章。
+
+MVI 借鉴了 cycle.js 的一些概念，主要的原则有单项数据流和 immutable 数据。这两个对于从 Angular js 转到 React js 的工程师来说，印象可能会更深刻一些。Angular 很讲究工程化，定义了一堆 template 之类的，但是混乱的数据流往往让人摸不着头脑，也许是水平不够吧。转到 React 之后瞬间感觉清晰了很多。这里我们就借鉴一下 react state 的思想，来设计一套类似的 Android 原生应用开发系统吧。
+
+view 是 state 的完全表现。这里的数据分两类，一类是有状态的 behavior Subject，一类是无状态的 publish Subject。
+
+viewModel 提供一个独立的 state 对象给 view，view 通过 view model 暴露的方法接口，来间接的改变 state，从而触发 view 的变化。
+
+比如输入框，会有如下的状态:
+
+- 是否获取焦点
+- 输入数据校验是否正确，错误的提示信息
+
+view 层通过这些信息，来组织自己的显示：“表单是否获取了正确的状态，需不需要错误提示”等
+
+比如一个 recycleView 列表，有如下状态：
+
+- 是否初次加载数据
+- 加载错误信息
+- 成功获取的数据
+- 是否在主动刷新数据
+- 是否在被动刷新数据
+- 是否在加载更多
+
+view 层会 observe 这个 state，来决定是否显示错误信息，是否刷新数据，loading 是 modal 显示还是普通显示。
+
+模块化，全局有自己的 state，组件也有自己的 state，父组件可以将自己的 state 通过 props 的形式传给子组件，子组件不能直接改变父组件的 state，但可以通过父组件提供的函数来触发父组件状态的变化。
+
+感觉做着做着，又回到了 React Native 的开发路子
+
+翻翻之前的代码，看看 RN 的页面数据流：
+
+- 页面加载，初始化 state
+  - 是否初始化完成
+  - 设置空数据
+  - 是否在主动刷新
+  - 是否在被动刷新
+  - 是否有更多数据
+- 建立监听数据流
+  - 用户状态监听，当用户登录或者退出时，刷新数据流
+  - 网络广播监听，当别的页面发出本页面感兴趣的广播时，更新对应的数据
+  - 用户主动行为监听，比如发出了刷新的信号后，主动刷新数据流
+- 数据流中的数据处理
+  - 更新本页面数据状态
+  - 更新全局状态
+  - toast 错误信息（这里有些差别，需要发 event 给 View 来处理）
+- 用户动作对应的接口
+  - 刷新动作：发出刷新信号
+  - 滑动加载更多：发网络请求，更新状态
+- render
+  - 根据状态显示信息
+  - 组件
+    - 初始化 loading view
+    - 数据列表
+      - 主动刷新 loading view
+      - 组件报告给 state 信息，比如头图高度等
+- 页面退出时
+  - 清除建立的数据流，防止内存泄露
+
+系统的介绍 Android MVI 的文章，要看 Hannes Dorfmann 的这个[系列](http://hannesdorfmann.com/android/mosby3-mvi-1)，分了 8 篇来讲 mvi 的具体实现。
