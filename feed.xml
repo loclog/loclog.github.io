@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.0.1">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2020-10-30T00:12:16+00:00</updated><id>/feed.xml</id><title type="html">LocLog</title><subtitle>安卓开发日志</subtitle><entry><title type="html">Android mvi架构</title><link href="/android/2020/05/21/mvi.html" rel="alternate" type="text/html" title="Android mvi架构" /><published>2020-05-21T15:04:58+00:00</published><updated>2020-05-21T15:04:58+00:00</updated><id>/android/2020/05/21/mvi</id><content type="html" xml:base="/android/2020/05/21/mvi.html">&lt;p&gt;Android 的系统架构从 MVC 开始，演化了很多的版本，有 MPV，MVVM，最新的架构是这篇要讲的 MVI。&lt;/p&gt;
+
+&lt;p&gt;开始讲 MVI 之前，我们先探讨一下之前的各个版本的差异，这里要引用&lt;a href=&quot;https://stackoverflow.com/questions/59205614/what-is-the-difference-between-mvi-compared-to-mvc-and-mvvm&quot;&gt;stack overflow&lt;/a&gt;上的一篇文章。&lt;/p&gt;
+
+&lt;p&gt;MVI 借鉴了 cycle.js 的一些概念，主要的原则有单项数据流和 immutable 数据。这两个对于从 Angular js 转到 React js 的工程师来说，印象可能会更深刻一些。Angular 很讲究工程化，定义了一堆 template 之类的，但是混乱的数据流往往让人摸不着头脑，也许是水平不够吧。转到 React 之后瞬间感觉清晰了很多。这里我们就借鉴一下 react state 的思想，来设计一套类似的 Android 原生应用开发系统吧。&lt;/p&gt;
+
+&lt;p&gt;view 是 state 的完全表现。这里的数据分两类，一类是有状态的 behavior Subject，一类是无状态的 publish Subject。&lt;/p&gt;
+
+&lt;p&gt;viewModel 提供一个独立的 state 对象给 view，view 通过 view model 暴露的方法接口，来间接的改变 state，从而触发 view 的变化。&lt;/p&gt;
+
+&lt;p&gt;比如输入框，会有如下的状态:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;是否获取焦点&lt;/li&gt;
+  &lt;li&gt;输入数据校验是否正确，错误的提示信息&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;view 层通过这些信息，来组织自己的显示：“表单是否获取了正确的状态，需不需要错误提示”等&lt;/p&gt;
+
+&lt;p&gt;比如一个 recycleView 列表，有如下状态：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;是否初次加载数据&lt;/li&gt;
+  &lt;li&gt;加载错误信息&lt;/li&gt;
+  &lt;li&gt;成功获取的数据&lt;/li&gt;
+  &lt;li&gt;是否在主动刷新数据&lt;/li&gt;
+  &lt;li&gt;是否在被动刷新数据&lt;/li&gt;
+  &lt;li&gt;是否在加载更多&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;view 层会 observe 这个 state，来决定是否显示错误信息，是否刷新数据，loading 是 modal 显示还是普通显示。&lt;/p&gt;
+
+&lt;p&gt;模块化，全局有自己的 state，组件也有自己的 state，父组件可以将自己的 state 通过 props 的形式传给子组件，子组件不能直接改变父组件的 state，但可以通过父组件提供的函数来触发父组件状态的变化。&lt;/p&gt;
+
+&lt;p&gt;感觉做着做着，又回到了 React Native 的开发路子&lt;/p&gt;
+
+&lt;p&gt;翻翻之前的代码，看看 RN 的页面数据流：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;页面加载，初始化 state
+    &lt;ul&gt;
+      &lt;li&gt;是否初始化完成&lt;/li&gt;
+      &lt;li&gt;设置空数据&lt;/li&gt;
+      &lt;li&gt;是否在主动刷新&lt;/li&gt;
+      &lt;li&gt;是否在被动刷新&lt;/li&gt;
+      &lt;li&gt;是否有更多数据&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;建立监听数据流
+    &lt;ul&gt;
+      &lt;li&gt;用户状态监听，当用户登录或者退出时，刷新数据流&lt;/li&gt;
+      &lt;li&gt;网络广播监听，当别的页面发出本页面感兴趣的广播时，更新对应的数据&lt;/li&gt;
+      &lt;li&gt;用户主动行为监听，比如发出了刷新的信号后，主动刷新数据流&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;数据流中的数据处理
+    &lt;ul&gt;
+      &lt;li&gt;更新本页面数据状态&lt;/li&gt;
+      &lt;li&gt;更新全局状态&lt;/li&gt;
+      &lt;li&gt;toast 错误信息（这里有些差别，需要发 event 给 View 来处理）&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;用户动作对应的接口
+    &lt;ul&gt;
+      &lt;li&gt;刷新动作：发出刷新信号&lt;/li&gt;
+      &lt;li&gt;滑动加载更多：发网络请求，更新状态&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;render
+    &lt;ul&gt;
+      &lt;li&gt;根据状态显示信息&lt;/li&gt;
+      &lt;li&gt;组件
+        &lt;ul&gt;
+          &lt;li&gt;初始化 loading view&lt;/li&gt;
+          &lt;li&gt;数据列表
+            &lt;ul&gt;
+              &lt;li&gt;主动刷新 loading view&lt;/li&gt;
+              &lt;li&gt;组件报告给 state 信息，比如头图高度等&lt;/li&gt;
+            &lt;/ul&gt;
+          &lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;页面退出时
+    &lt;ul&gt;
+      &lt;li&gt;清除建立的数据流，防止内存泄露&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;系统的介绍 Android MVI 的文章，要看 Hannes Dorfmann 的这个&lt;a href=&quot;http://hannesdorfmann.com/android/mosby3-mvi-1&quot;&gt;系列&lt;/a&gt;，分了 8 篇来讲 mvi 的具体实现。&lt;/p&gt;</content><author><name></name></author><summary type="html">Android 的系统架构从 MVC 开始，演化了很多的版本，有 MPV，MVVM，最新的架构是这篇要讲的 MVI。</summary></entry><entry><title type="html">github pages + jekyll搭建个人blog</title><link href="/website/2020/05/16/welcome-to-jekyll.html" rel="alternate" type="text/html" title="github pages + jekyll搭建个人blog" /><published>2020-05-16T06:40:20+00:00</published><updated>2020-05-16T06:40:20+00:00</updated><id>/website/2020/05/16/welcome-to-jekyll</id><content type="html" xml:base="/website/2020/05/16/welcome-to-jekyll.html">&lt;p&gt;开一个 blog 记录一下自己开发 android 的历程
+开篇留给 github 和 jekyll 吧&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;感谢 &lt;a href=&quot;https://pages.github.com&quot;&gt;github page&lt;/a&gt; 提供的 webhost&lt;/li&gt;
+  &lt;li&gt;感谢 &lt;a href=&quot;https://jekyllrb.com/&quot;&gt;jekyll&lt;/a&gt; 提供的 markdown 转 html 引擎&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;整个网站的配置大概花了一下午的时间，有这么几点注意事项&lt;/p&gt;
+
+&lt;h2 id=&quot;github-pages&quot;&gt;github pages&lt;/h2&gt;
+
+&lt;p&gt;github pages 提供的是一个免费的静态的网站，用户可以自己定义域名的前缀，比如 loclog，外部就可以通过 loclog.github.com 来访问了。具体的 &lt;a href=&quot;https://help.github.com/en/github/working-with-github-pages&quot;&gt;github pages 的帮助文档&lt;/a&gt; 不多，开始前需要浏览一遍。&lt;/p&gt;
+
+&lt;h2 id=&quot;jekyll&quot;&gt;jekyll&lt;/h2&gt;
+
+&lt;p&gt;默认的 gitub pages 代码是一堆静态的 html 文件，如果是用来写 blog 的话，由于直接写 html 太痛苦了，我们需要找一个 web 框架来提供一个便利的工具，这里 jekyll 就出现了。jekyll 是 ruby 写的，建立了一套 markdown 和其他语言转 html 的框架，这样我们直接写 md 就行了。&lt;a href=&quot;https://jekyllrb.com/docs/&quot;&gt;jekyll 的文档&lt;/a&gt; 也需要浏览一下。&lt;/p&gt;
+
+&lt;h2 id=&quot;mac-环境本地预览&quot;&gt;mac 环境本地预览&lt;/h2&gt;
+
+&lt;p&gt;blog 发布出去之前，终归要先在本地预览一下吧，这样就需要本地跑一个 jekyll 的服务。因为 jekyll 是 ruby 写的，所以我们还需要在本地建一套 ruby 的运行环境。下面是 mac 下建这个环境的注意事项。&lt;/p&gt;
+
+&lt;p&gt;mac 自带的有 ruby，但是这个 ruby 系统卡的很死，不能安装 gem 包，所以我们需要用 brew 额外安装一个 ruby 在 local 目录下供我们使用。具体可参考 &lt;a href=&quot;https://stackoverflow.com/questions/51126403/you-dont-have-write-permissions-for-the-library-ruby-gems-2-3-0-directory-ma&quot;&gt;stackoverflow&lt;/a&gt; 上的描述。&lt;/p&gt;
+
+&lt;h2 id=&quot;jekyll-版本升级&quot;&gt;jekyll 版本升级&lt;/h2&gt;
+
+&lt;p&gt;github pages 默认支持的版本比较低，目前是 3.8.5，最新的 jekyll 已经升级到下一个大版本了——4.1.0，为了使用最新的版本，还需要一些额外的工作，可以参考 &lt;a href=&quot;https://jekyllrb.com/docs/continuous-integration/github-actions/&quot;&gt;这篇文章&lt;/a&gt;, 配置 github 的自动部署服务 github actions，来自动部署我们的 jekyll&lt;/p&gt;
+
+&lt;h2 id=&quot;favicon&quot;&gt;favicon&lt;/h2&gt;
+
+&lt;p&gt;删除默认的 index.html 文件，website 就跑起来了，自动渲染目录下的 index.md。这时遇到的第一个问题就出现了，没有 favcion，没有图标，光秃秃的总不太好看，如何加呢，md 文件里貌似没有添加的入口。参考&lt;a href=&quot;https://medium.com/@xiang_zhou/how-to-add-a-favicon-to-your-jekyll-site-2ac2179cc2ed&quot;&gt;这篇文章&lt;/a&gt;，我们可以增加一个 header 文件，来处理 html 头的问题。&lt;/p&gt;
+
+&lt;p&gt;下面的问题就是生成图标了，mac 触摸板的出现，对网站的图标提出了新的要求，&lt;a href=&quot;https://realfavicongenerator.net/&quot;&gt;这个网站&lt;/a&gt;提供了全套的图标处理方案。&lt;/p&gt;
+
+&lt;p&gt;目前就这些注意事项吧，这个 blog 的源码在&lt;a href=&quot;https://github.com/loclog/loclog.github.io&quot;&gt;这里&lt;/a&gt;，有不清楚的问题可以参考一下。&lt;/p&gt;</content><author><name></name></author><summary type="html">开一个 blog 记录一下自己开发 android 的历程 开篇留给 github 和 jekyll 吧</summary></entry></feed>
